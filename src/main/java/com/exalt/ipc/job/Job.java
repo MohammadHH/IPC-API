@@ -2,12 +2,10 @@ package com.exalt.ipc.job;
 
 import com.exalt.ipc.ipc.IPC;
 import com.exalt.ipc.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @MappedSuperclass
@@ -15,16 +13,16 @@ public class Job {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @NotBlank
-    @Size(max = 250)
-    private String description;
     @DateTimeFormat
     private LocalDateTime creationDate;
     private String state;
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "uesr_id")
+    private LocalDateTime returnedDate;
+    @JsonIgnore
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinColumn(name = "user_id")
     private User user;
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinColumn(name = "ipc_id")
     private IPC ipc;
 
@@ -32,14 +30,17 @@ public class Job {
     }
 
     public Job(Job job) {
-        this.description = job.description;
         this.creationDate = job.creationDate;
         this.state = job.state;
     }
 
-    public Job(@NotBlank @Max(250) String description, LocalDateTime creationDate, String state) {
-        this.description = description;
+    public Job(LocalDateTime creationDate, String state) {
         this.creationDate = creationDate;
+        this.state = state;
+    }
+
+    public Job(String state) {
+        this.creationDate = LocalDateTime.now();
         this.state = state;
     }
 
@@ -49,14 +50,6 @@ public class Job {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public LocalDateTime getCreationDate() {
@@ -91,11 +84,18 @@ public class Job {
         this.ipc = ipc;
     }
 
+    public LocalDateTime getReturnedDate() {
+        return returnedDate;
+    }
+
+    public void setReturnedDate(LocalDateTime returnedDate) {
+        this.returnedDate = returnedDate;
+    }
+
     @Override
     public String toString() {
         return "Job{" +
                 "id=" + id +
-                ", description='" + description + '\'' +
                 ", creationDate=" + creationDate +
                 ", state='" + state + '\'' +
                 '}';

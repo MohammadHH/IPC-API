@@ -21,6 +21,10 @@ public class PressQueue {
         this.press = queue.press;
     }
 
+    public PressQueue(Press press) {
+        this.press = press;
+    }
+
     public int getId() {
         return id;
     }

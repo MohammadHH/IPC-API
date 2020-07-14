@@ -1,10 +1,14 @@
-package com.exalt.ipc.file;
+package com.exalt.ipc.job;
 
-import com.exalt.ipc.job.Job;
+import com.exalt.ipc.ipc.IPC;
+import com.exalt.ipc.user.User;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.Entity;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 
 @Entity
 public class File extends Job {
@@ -13,7 +17,6 @@ public class File extends Job {
     private String type;
     @Max(200_000_000)
     private long size;
-    private byte[] data;
 
     public File() {
         super();
@@ -23,11 +26,19 @@ public class File extends Job {
         super(job);
     }
 
-    public void setFileInfo(@NotBlank String name, String type, @Max(200_000_000) long size, byte[] data) {
+    public File(String state, User user, IPC ipc, MultipartFile file) {
+        super(state);
+        super.setUser(user);
+        super.setIpc(ipc);
+        this.name = StringUtils.cleanPath(file.getOriginalFilename());
+        this.type = file.getContentType();
+        this.size = file.getSize();
+    }
+
+    public void setFileInfo(@NotBlank String name, String type, @Max(200_000_000) long size) {
         this.name = name;
         this.type = type;
         this.size = size;
-        this.data = data;
     }
 
     public String getName() {
@@ -53,20 +64,27 @@ public class File extends Job {
     public void setSize(long size) {
         this.size = size;
     }
-
-    public byte[] getData() {
-        return data;
+    
+    public LocalDateTime getReturnedDate() {
+        return super.getReturnedDate();
     }
 
-    public void setData(byte[] data) {
-        this.data = data;
+    public void setReturnedDate(LocalDateTime returnedDate) {
+        super.setReturnedDate(returnedDate);
+    }
+
+    public String getState() {
+        return super.getState();
+    }
+
+    public void setState(String state) {
+        super.setState(state);
     }
 
     @Override
     public String toString() {
         return "File{" +
                 "id=" + super.getId() +
-                ", description='" + super.getDescription() + '\'' +
                 ", creationDate=" + super.getCreationDate() +
                 ", state='" + super.getState() + '\'' +
                 ", name='" + name + '\'' +

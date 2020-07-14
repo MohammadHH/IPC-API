@@ -17,6 +17,11 @@ public class PrintingQueue extends PressQueue {
         super(queue);
     }
 
+    public PrintingQueue(PressQueue queue, int itemsLimit) {
+        super(queue);
+        setItemsLimit(itemsLimit);
+    }
+
     public int getItemsLimit() {
         return itemsLimit;
     }
