@@ -38,7 +38,7 @@ public class IPCService {
     public Map<String, Object> getIPCMap(String jwt, HttpServletRequest request) {
         User user = userService.getUser(jwt, request);
         Map<String, Object> map = user.getIpc().getIPCMap();
-        List<File> files = fileRepository.findByStateAndIpcId(UPLOADED, user.getIpc().getId());
+        List<File> files = fileRepository.findByStateAndUserId(UPLOADED, user.getId());
         map.put("residual", user.getIpc().getQueueLimit() - files.size());
         return map;
     }

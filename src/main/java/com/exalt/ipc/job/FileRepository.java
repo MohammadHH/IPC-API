@@ -14,7 +14,9 @@ public interface FileRepository extends CrudRepository<File, Integer> {
 
     public Optional<File> findByIdAndUserEmail(int id, String email);
 
-    public List<File> findByStateAndIpcId(String state, int id);
+    public List<File> findByStateAndUserId(String state, int id);
 
-    List<File> findByIpcId(int id);
+    List<File> findByUserId(int id);
+
+//    List<File> findByIpcId(int id);
 }

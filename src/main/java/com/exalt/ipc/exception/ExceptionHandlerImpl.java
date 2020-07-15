@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @ControllerAdvice
+//@Component
 public class ExceptionHandlerImpl extends ResponseEntityExceptionHandler {
     @Autowired
     ExceptionResponse exceptionResponse;
@@ -29,6 +30,8 @@ public class ExceptionHandlerImpl extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     public final ResponseEntity handleCustomException(CustomException ex, WebRequest request) throws Exception {
+        System.out.println("handling the exception " + request.getHeader("Accept-Language"));
+        System.out.println("localeService " + localeService.getMessage("error.7070"));
         return new ResponseEntity(new ExceptionResponse(ex), HttpStatus.valueOf(ex.getStatus()));
     }
 

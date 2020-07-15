@@ -8,6 +8,7 @@ import com.exalt.ipc.job.FileRepository;
 import com.exalt.ipc.localization.LocaleService;
 import com.exalt.ipc.press.Press;
 import com.exalt.ipc.press.PressRepository;
+import com.exalt.ipc.user.UserRepository;
 import com.exalt.ipc.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,8 @@ public class HelperSerivce {
     LocaleService localeService;
     @Autowired
     FileRepository fileRepository;
+    @Autowired
+    UserRepository userRepository;
 
     public String getEmail(String jwt) {
         return JWT.require(Algorithm.HMAC512(SECRET.getBytes()))

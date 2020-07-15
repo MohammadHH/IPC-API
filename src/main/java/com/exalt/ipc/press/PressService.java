@@ -47,8 +47,6 @@ public class PressService {
     @Transactional
     public Press storePress(User user, String description) {
         Press press = new Press(user, description);
-        press.setIpc(user.getIpc());
-        press.setMapped(false);
         Press savedPress = pressRepository.save(press);
         PressQueue pressQueue = new PressQueue();
         pressQueue.setPress(savedPress);
@@ -59,8 +57,8 @@ public class PressService {
     }
 
     @Transactional
-    public Press map(Press press, HttpServletRequest request) {
-        if (pressRepository.findByUserEmailAndMappedTrue(press.getUser().getEmail()).isPresent())
+    public Press map(Press press, User user, HttpServletRequest request) {
+        if (press.getIpc() != null)
             throw new CustomException("7050", request, HttpStatus.BAD_REQUEST, localeService, 7051);
         PressQueueService pressQueueService = new PressQueueService(fileRepository);
         pressQueueService.setHeldQueueSizeLimit(heldQueueRepository.findByPressId(press.getId()).get().getSizeLimit());
@@ -68,7 +66,7 @@ public class PressService {
         pressMap.put(press.getId(), pressQueueService);
         System.out.println("pressMap");
         pressMap.forEach((k, v) -> System.out.println(k + ": " + v));
-        press.setMapped(true);
+        press.setIpc(user.getIpc());
         return pressRepository.save(press);
     }
 
@@ -81,7 +79,7 @@ public class PressService {
         if (pressQueueService.isEmptyPrintingQueue())
             throw new CustomException("7080", request, HttpStatus.BAD_REQUEST, localeService, 7081);
         pressMap.remove(press.getId());
-        press.setMapped(false);
+        press.setIpc(null);
         return pressRepository.save(press);
     }
 
@@ -91,7 +89,7 @@ public class PressService {
         List<Integer> errors = new LinkedList<>();
         if (!job.getState().equals(UPLOADED))
             errors.add(7061);
-        if (!press.isMapped())
+        if (press.getIpc() == null)
             errors.add(7062);
         if (!errors.isEmpty())
             throw new CustomException("7060", request, HttpStatus.BAD_REQUEST, localeService, errors);
@@ -106,8 +104,9 @@ public class PressService {
     @Transactional
     public List<File> addJobs(Press press, List<File> jobs, HttpServletRequest request) {
         PressQueueService pressQueueService = pressMap.get(press.getId());
-        if (!pressQueueService.heldQueueHasEnoughSize(jobs))
-            throw new CustomException("7060", request, HttpStatus.BAD_REQUEST, localeService, 7060, 7063);
+//        if (!pressQueueService.heldQueueHasEnoughSize(jobs))
+//            throw new CustomException("7060", request, HttpStatus.BAD_REQUEST, localeService, 7060, 7063);
+//            throw new RuntimeException("Exception");
         List<File> addedJobs = new LinkedList<>();
         jobs.forEach((job) -> addedJobs.add(addJob(press, job, request)));
         return addedJobs;
@@ -115,7 +114,7 @@ public class PressService {
 
     public File printJob(Press press, HttpServletRequest request) {
         CustomException ex;
-        if (!press.isMapped())
+        if (press.getIpc() == null)
             throw new CustomException("7070", request, HttpStatus.BAD_REQUEST, localeService, 7071);
         PressQueueService pressQueueService = pressMap.get(press.getId());
         if (pressQueueService.isHeldQueueEmpty())
@@ -127,7 +126,7 @@ public class PressService {
 
     public List<File> printAllJobs(Press press, HttpServletRequest request) {
         CustomException ex;
-        if (!press.isMapped())
+        if (press.getIpc() == null)
             throw new CustomException("7070", request, HttpStatus.BAD_REQUEST, localeService, 7071);
         PressQueueService pressQueueService = pressMap.get(press.getId());
         if (pressQueueService.isHeldQueueEmpty())

@@ -1,16 +1,17 @@
 package com.exalt.ipc.job;
 
-import com.exalt.ipc.ipc.IPC;
 import com.exalt.ipc.user.User;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.Entity;
+import javax.persistence.Table;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "Job")
 public class File extends Job {
     @NotBlank
     private String name;
@@ -26,10 +27,9 @@ public class File extends Job {
         super(job);
     }
 
-    public File(String state, User user, IPC ipc, MultipartFile file) {
+    public File(String state, User user, MultipartFile file) {
         super(state);
         super.setUser(user);
-        super.setIpc(ipc);
         this.name = StringUtils.cleanPath(file.getOriginalFilename());
         this.type = file.getContentType();
         this.size = file.getSize();
@@ -64,7 +64,7 @@ public class File extends Job {
     public void setSize(long size) {
         this.size = size;
     }
-    
+
     public LocalDateTime getReturnedDate() {
         return super.getReturnedDate();
     }
@@ -90,7 +90,6 @@ public class File extends Job {
                 ", name='" + name + '\'' +
                 ", type='" + type + '\'' +
                 (super.getUser() != null ? ", userId=" + super.getUser().getId() : "") +
-                (super.getIpc() != null ? ", ipcId=" + super.getIpc().getId() : "") +
                 ", size=" + size +
                 '}';
     }

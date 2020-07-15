@@ -68,7 +68,7 @@ public class PressController {
         User user = userService.getUser(jwt, request);
         Press p = pressService.getPress(press, request);
         helperSerivce.isOwner(helperSerivce.getEmail(jwt), p, request);
-        return ResponseEntity.ok(pressService.map(p, request));
+        return ResponseEntity.ok(pressService.map(p, user, request));
     }
 
     @PostMapping("/v1/presses/{press}/unmap")

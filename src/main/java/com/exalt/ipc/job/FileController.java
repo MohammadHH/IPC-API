@@ -53,7 +53,7 @@ public class FileController {
         if (files == null || files.length == 0)
             new CustomException("7017", request, HttpStatus.BAD_REQUEST, localeService);
         fileService.validateFiles(files, request);
-        return fileService.storeFiles(user.getId(), user.getIpc().getId(), files, request);
+        return fileService.storeFiles(user, files, request);
     }
 
 
@@ -68,7 +68,7 @@ public class FileController {
                                   @RequestHeader(HEADER_STRING) String jwt,
                                   HttpServletRequest request) {
         User user = userService.getUser(jwt, request);
-        return fileService.getUploaded(user.getIpc().getId());
+        return fileService.getUploaded(user);
     }
 
     @GetMapping(value = "/v1/jobs", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -76,7 +76,7 @@ public class FileController {
                                  @RequestHeader(HEADER_STRING) String jwt,
                                  HttpServletRequest request) {
         User user = userService.getUser(jwt, request);
-        return fileService.getAllJobs(user.getIpc().getId());
+        return fileService.getAllJobs(user);
     }
 
     @GetMapping(value = "/v1/jobs/{state}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -87,7 +87,7 @@ public class FileController {
         User user = userService.getUser(jwt, request);
         if (!Arrays.stream(getStates()).anyMatch((s) -> s.equals(state)))
             throw new CustomException("7090", request, HttpStatus.BAD_REQUEST, localeService, 7091);
-        return fileService.getJobs(state, user.getIpc().getId());
+        return fileService.getJobs(state, user);
     }
 
 }

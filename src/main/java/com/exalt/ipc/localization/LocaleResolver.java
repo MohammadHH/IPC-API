@@ -1,7 +1,5 @@
 package com.exalt.ipc.localization;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
@@ -17,7 +15,7 @@ public class LocaleResolver extends AcceptHeaderLocaleResolver {
 
     private static final List<Locale> LOCALES = Arrays.asList(new Locale("en"), new Locale("ar"));
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+//    private Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Override
     public Locale resolveLocale(HttpServletRequest request) {

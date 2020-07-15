@@ -9,6 +9,6 @@ import java.util.Optional;
 public interface PressRepository extends CrudRepository<Press, Integer> {
     public Optional<Press> findByIdAndUserEmail(int id, String email);
 
-    public Optional<Press> findByUserEmailAndMappedTrue(String email);
+//    public Optional<Press> findByUserEmailAndMappedTrue(String email);
 
 }

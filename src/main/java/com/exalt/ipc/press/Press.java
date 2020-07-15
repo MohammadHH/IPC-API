@@ -16,18 +16,23 @@ public class Press {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    //    @NotNull
+//    @NotBlank
+    private String name;
+    //    @NotNull
+//    @NotBlank
+    private String address;
     @DateTimeFormat
     private LocalDateTime creationDate;
     @Size(max = 250)
     private String description;
-    private boolean mapped;
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
     private User user;
 
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "ipc_id")
     private IPC ipc;
 
@@ -38,13 +43,12 @@ public class Press {
         this.creationDate = LocalDateTime.now();
         this.description = description;
         this.user = user;
-        this.mapped = false;
     }
 
     public Press(LocalDateTime creationDate, @Max(250) String description) {
         this.creationDate = creationDate;
         this.description = description;
-        this.ipc = ipc;
+        this.ipc = null;
     }
 
     public int getId() {
@@ -71,14 +75,6 @@ public class Press {
         this.description = description;
     }
 
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public IPC getIpc() {
         return ipc;
     }
@@ -87,14 +83,14 @@ public class Press {
         this.ipc = ipc;
     }
 
-    public boolean isMapped() {
-        return mapped;
+
+    public User getUser() {
+        return user;
     }
 
-    public void setMapped(boolean mapped) {
-        this.mapped = mapped;
+    public void setUser(User user) {
+        this.user = user;
     }
-    
 
     @Override
     public String toString() {
@@ -102,7 +98,6 @@ public class Press {
                 "id=" + id +
                 ", creationDate=" + creationDate +
                 ", description='" + description + '\'' +
-                (getUser() != null ? ", userId=" + getUser().getId() : "") +
                 (getIpc() != null ? ", ipcId=" + getIpc().getId() : "") +
                 '}';
     }

@@ -1,6 +1,5 @@
 package com.exalt.ipc.job;
 
-import com.exalt.ipc.ipc.IPC;
 import com.exalt.ipc.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,10 +20,13 @@ public class Job {
     @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinColumn(name = "user_id")
     private User user;
-    @JsonIgnore
-    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH})
-    @JoinColumn(name = "ipc_id")
-    private IPC ipc;
+    //    @NotBlank
+//    @NotNull
+    private String address;
+//    @JsonIgnore
+//    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.DETACH, CascadeType.PERSIST, CascadeType.REFRESH})
+//    @JoinColumn(name = "ipc_id")
+//    private IPC ipc;
 
     public Job() {
     }
@@ -74,14 +76,6 @@ public class Job {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public IPC getIpc() {
-        return ipc;
-    }
-
-    public void setIpc(IPC ipc) {
-        this.ipc = ipc;
     }
 
     public LocalDateTime getReturnedDate() {

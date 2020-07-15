@@ -1,7 +1,6 @@
 package com.exalt.ipc.job;
 
 import com.exalt.ipc.exception.CustomException;
-import com.exalt.ipc.ipc.IPC;
 import com.exalt.ipc.ipc.IPCRepository;
 import com.exalt.ipc.localization.LocaleService;
 import com.exalt.ipc.user.User;
@@ -39,26 +38,22 @@ public class FileService {
     };
 
     @Transactional
-    private File uploadFile(int userId, int ipcId, MultipartFile file) throws Exception {
-        User user = userRepository.findById(userId).orElse(null);
-        IPC ipc = ipcRepository.findById(ipcId).orElse(null);
-        if (ipc != null && user != null) {
-            fileStorageService.storeFile(file);
-            return fileRepository.save(new File(UPLOADED, user, ipc, file));
-        } else throw new Exception("Failed to save file");
+    private File uploadFile(User user, MultipartFile file) throws Exception {
+        fileStorageService.storeFile(file);
+        return fileRepository.save(new File(UPLOADED, user, file));
     }
 
-    public int getResidualFiles(int ipcId) {
-        return ipcRepository.findById(ipcId).get().getQueueLimit() - fileRepository.findByStateAndIpcId(UPLOADED, ipcId).size();
+    public int getResidualFiles(User user) {
+        return ipcRepository.findById(user.getIpc().getId()).get().getQueueLimit() - fileRepository.findByStateAndUserId(UPLOADED, user.getId()).size();
     }
 
     @Transactional
-    public List<File> storeFiles(int userId, int ipcId, MultipartFile[] files, HttpServletRequest request) {
+    public List<File> storeFiles(User user, MultipartFile[] files, HttpServletRequest request) {
         List<File> savedFiles = new ArrayList<>();
-        if (getResidualFiles(ipcId) >= files.length)
+        if (getResidualFiles(user) >= files.length)
             Arrays.stream(files).forEach(file -> {
                 try {
-                    savedFiles.add(uploadFile(userId, ipcId, file));
+                    savedFiles.add(uploadFile(user, file));
                 } catch (Exception e) {
                 }
             });
@@ -79,16 +74,16 @@ public class FileService {
         return true;
     }
 
-    public List<File> getUploaded(int ipc) {
-        return fileRepository.findByStateAndIpcId(UPLOADED, ipc);
+    public List<File> getUploaded(User user) {
+        return fileRepository.findByStateAndUserId(UPLOADED, user.getId());
     }
 
-    public List<File> getAllJobs(int ipc) {
-        return fileRepository.findByIpcId(ipc);
+    public List<File> getAllJobs(User user) {
+        return fileRepository.findByUserId(user.getId());
     }
 
-    public List<File> getJobs(String state, int ipc) {
-        return fileRepository.findByStateAndIpcId(state, ipc);
+    public List<File> getJobs(String state, User user) {
+        return fileRepository.findByStateAndUserId(state, user.getId());
     }
 
     public File getJob(int jobId, HttpServletRequest request) {
