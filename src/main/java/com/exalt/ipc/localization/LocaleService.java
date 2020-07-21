@@ -1,22 +1,37 @@
 package com.exalt.ipc.localization;
 
-import org.springframework.web.context.request.WebRequest;
+import com.exalt.ipc.exception.SubCodeError;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
-public interface LocaleService {
-    String getMessage(String code, HttpServletRequest request);
+@Service
+public class LocaleService {
 
-    String getMessage(int code, HttpServletRequest request);
+	public static final String ERROR = "error.";
 
-    String[] getMessage(HttpServletRequest request, int... code);
+	@Autowired
+	private MessageSource messageSource;
 
-    String[] getMessage(HttpServletRequest request, List<Integer> codes);
+	@Autowired
+	private LocaleResolver localeResolver;
 
-    String getMessage(String code);
+	public String getMessage(HttpServletRequest request, int code) {
+		return messageSource.getMessage(ERROR + code, null, localeResolver.resolveLocale(request));
+	}
 
-    String getMessage(String s, WebRequest request);
+	public SubCodeError getSubError(HttpServletRequest request, int code) {
+		return new SubCodeError(code, getMessage(request, code));
+	}
 
-    String[] getMessage(WebRequest request, int[] codes);
+	public List<SubCodeError> getSubErrors(HttpServletRequest request, int... codes) {
+		LinkedList<SubCodeError> list = new LinkedList<>();
+		Arrays.stream(codes).forEach(code -> list.add(getSubError(request, code)));
+		return list;
+	}
 }
