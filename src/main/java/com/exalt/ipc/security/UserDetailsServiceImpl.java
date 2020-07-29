@@ -22,7 +22,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-		//	"error.user.not.found"
 		com.exalt.ipc.entities.User user = userService.getUserOptional(email).get();
 		User.UserBuilder builder = null;
 		if (user == null) {

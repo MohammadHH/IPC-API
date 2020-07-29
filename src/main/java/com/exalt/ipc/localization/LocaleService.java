@@ -25,8 +25,17 @@ public class LocaleService {
 		return messageSource.getMessage(ERROR + code, null, localeResolver.resolveLocale(request));
 	}
 
+	public String getMessage(HttpServletRequest request, String additional, int code) {
+		return String.format("%s '%s'", messageSource.getMessage(ERROR + code, null, localeResolver.resolveLocale(request)),
+				additional);
+	}
+
 	public SubCodeError getSubError(HttpServletRequest request, int code) {
 		return new SubCodeError(code, getMessage(request, code));
+	}
+
+	public SubCodeError getSubError(HttpServletRequest request, String additional, int code) {
+		return new SubCodeError(code, getMessage(request, additional, code));
 	}
 
 	public List<SubCodeError> getSubErrors(HttpServletRequest request, int... codes) {

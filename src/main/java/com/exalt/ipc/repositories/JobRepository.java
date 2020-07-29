@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface JobRepository extends CrudRepository<Job, Integer> {
-	Optional<Job> findByIdAndUserEmail(int id, String email);
+	Optional<Job> findByIdAndUserId(int id, int userId);
 
 	List<Job> findByStateAndUserId(String state, int id);
 

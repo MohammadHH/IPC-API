@@ -3,6 +3,7 @@ package com.exalt.ipc.services;
 import com.exalt.ipc.entities.File;
 import com.exalt.ipc.entities.Job;
 import com.exalt.ipc.entities.User;
+import com.exalt.ipc.exception.CommonExceptions;
 import com.exalt.ipc.repositories.JobRepository;
 import com.exalt.ipc.utilities.States;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.exalt.ipc.utilities.States.UPLOADED;
+import static com.exalt.ipc.utilities.States.getStates;
 
 @Service
 public class JobService {
@@ -44,16 +46,13 @@ public class JobService {
 		User user = userService.getUserByJwt(jwt);
 		validateFiles(files);
 		List<Job> savedJobs = new ArrayList<>();
-		if (ipcService.getResidual(jwt) >= files.length) {
-			Arrays.stream(files).forEach(file -> {
-				try {
-					savedJobs.add(uploadJob(user, file));
-				} catch (Exception e) {
-				}
-			});
-		} else {
-			//			throw new CustomException("7010", HttpStatus.BAD_REQUEST, 7011);
-		}
+		if (files.length == 0 || files == null)
+			throw CommonExceptions.EMPTY_UPLOADED_FILE_EXCEPTION;
+		if (ipcService.getResidual(jwt) < files.length)
+			throw CommonExceptions.NO_ROOM_IN_IPC_QUEUE_EXCEPTION;
+		Arrays.stream(files).forEach(file -> {
+			savedJobs.add(uploadJob(user, file));
+		});
 		return savedJobs;
 	}
 
@@ -62,18 +61,17 @@ public class JobService {
 	}
 
 	@Transactional
-	private Job uploadJob(User user, MultipartFile file) throws Exception {
+	private Job uploadJob(User user, MultipartFile file) {
 		File uploadedFile = fileStorageService.storeFile(file);
 		return saveJob(new Job(UPLOADED, uploadedFile, user));
 	}
 
 	public void validateFile(MultipartFile file) {
-		if (file.isEmpty()) {
-			//			throw new CustomException("7016", HttpStatus.BAD_REQUEST);
-		}
-		if (!Arrays.stream(mimes).anyMatch(mime -> file.getContentType().equals(mime))) {
-			//			throw new CustomException("7014", HttpStatus.BAD_REQUEST, 7015);
-		}
+		if (file.isEmpty())
+			throw CommonExceptions.EMPTY_UPLOADED_FILE_EXCEPTION;
+		if (!Arrays.stream(mimes).anyMatch(mime -> file.getContentType().equals(mime)))
+			throw CommonExceptions.INVALID_FILE_MIME_EXCEPTION;
+		//throw new HttpMediaTypeNotSupportedException(MediaType.valueOf(file.getContentType()), Collections.emptyList(),"")
 	}
 
 	public Job saveJob(Job job) {
@@ -81,7 +79,7 @@ public class JobService {
 	}
 
 	public void deleteJobsByIDs(List<Integer> IDs, String jwt) {
-		deleteJobs(getJobs(IDs), jwt);
+		deleteJobs(getJobsForUser(IDs, userService.getUserByJwt(jwt).getId()), jwt);
 	}
 
 	public void deleteJobs(List<Job> jobs, String jwt) {
@@ -90,8 +88,10 @@ public class JobService {
 		jobs.forEach(job -> deleteJob(job));
 	}
 
-	public List<Job> getJobs(List<Integer> IDs) {
-		return IDs.stream().collect(Collectors.mapping(id -> getOptionalJob(id).get(), Collectors.toList()));
+	public List<Job> getJobsForUser(List<Integer> IDs, int userId) {
+		return IDs.stream().collect(Collectors
+				.mapping(id -> getOptionalJobByUserId(id, userId).orElseThrow(() -> CommonExceptions.JOB_NOT_FOUND_EXCEPTION),
+						Collectors.toList()));
 	}
 
 	public Boolean deleteJob(Job job) {
@@ -99,14 +99,12 @@ public class JobService {
 		return true;
 	}
 
-	//	public Job getJob(int jobId) {
-	//		CustomException ex = new CustomException(E7030, HttpStatus.NOT_FOUND, 7032);
-	//		Job job = jobRepository.findById(jobId).orElseThrow(() -> ex);
-	//		//		return job;
-	//		return null;
-	//	}
 	public Optional<Job> getOptionalJob(int id) {
 		return jobRepository.findById(id);
+	}
+
+	public Optional<Job> getOptionalJobByUserId(int id, int userId) {
+		return jobRepository.findByIdAndUserId(id, userId);
 	}
 
 	public List<Job> getUploaded(String jwt) {
@@ -122,7 +120,13 @@ public class JobService {
 	}
 
 	public List<Job> getJobs(String state, String jwt) {
+		validState(state);
 		return jobRepository.findByStateAndUserId(state, userService.getUserByJwt(jwt).getId());
+	}
+
+	private void validState(String state) {
+		if (!Arrays.stream(getStates()).anyMatch((s) -> s.equals(state)))
+			throw CommonExceptions.INVALID_JOB_STATE_EXCEPTION;
 	}
 
 	public void deleteUserJobs(User user) {
@@ -130,12 +134,19 @@ public class JobService {
 		jobs.stream().forEach(jobRepository::delete);
 	}
 
-	public List<Job> moveJobs(int pressId, List<Integer> IDs, String src, String dst) {
+	public List<Job> moveJobs(int pressId, List<Integer> IDs, String src, String dst, String jwt) {
 		String srcState = States.get(src), dstState = States.get(dst);
-		System.out.println("srcState " + srcState + " dstState " + dstState);
+		//If the press is not mapped, don't move jobs
+		if (pressService.findMappedPress(jwt) == null)
+			throw CommonExceptions.PRESS_ALREADY_UNMAPPED_EXCEPTION;
+		if (srcState == null)
+			throw CommonExceptions.INVALID_JOB_SOURCE_EXCEPTION;
+		if (dstState == null)
+			throw CommonExceptions.INVALID_JOB_DESTINATION_EXCEPTION;
 		if (srcState.equals(UPLOADED))
-			return pressService.moveTo(pressId, getJobs(IDs), dstState);
+			return pressService.moveTo(pressId, getJobsForUser(IDs, userService.getUserByJwt(jwt).getId()), dstState);
 		else
-			return pressService.moveBetween(pressId, getJobs(IDs), srcState, dstState);
+			return pressService
+					.moveBetween(pressId, getJobsForUser(IDs, userService.getUserByJwt(jwt).getId()), srcState, dstState);
 	}
 }

@@ -60,7 +60,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 				// this disables session creation on Spring Security
 				.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 		//enable h2-console
-		http.headers().frameOptions().disable();
+		//		http.headers().frameOptions().disable();
 
 	}
 

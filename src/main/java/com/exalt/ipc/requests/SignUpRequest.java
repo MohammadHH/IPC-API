@@ -34,6 +34,14 @@ public class SignUpRequest {
 	public SignUpRequest() {
 	}
 
+	public SignUpRequest(@Email @NotNull String email, @NotNull @Size(min = 8) String password,
+			@NotBlank @Size(min = 2, max = 30) String firstName, @NotBlank @Size(min = 2, max = 30) String lastName) {
+		this.email = email;
+		this.password = password;
+		this.firstName = firstName;
+		this.lastName = lastName;
+	}
+
 	public String getEmail() {
 		return email;
 	}

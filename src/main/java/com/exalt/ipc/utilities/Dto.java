@@ -11,12 +11,14 @@ import com.exalt.ipc.requests.SignUpRequest;
 import com.exalt.ipc.responses.IPCResponse;
 import com.exalt.ipc.responses.JwtResponse;
 import com.exalt.ipc.responses.PressResponse;
+import com.exalt.ipc.services.JwtService;
 import org.springframework.web.multipart.MultipartFile;
 
 import static com.exalt.ipc.configuration.RoleConstants.ROLE_USER;
 
 public class Dto {
 
+	//Return a user from sign-up request
 	public static User from(SignUpRequest signUpRequest) {
 		User user = new User();
 		user.setFirstName(signUpRequest.getFirstName());
@@ -27,6 +29,7 @@ public class Dto {
 		return user;
 	}
 
+	//Return a PressResponse=[Press,press is mapped or not]
 	public static PressResponse from(Press press, boolean mapped) {
 		PressResponse pressResponse = new PressResponse();
 		pressResponse.setId(press.getId());
@@ -38,8 +41,9 @@ public class Dto {
 		return pressResponse;
 	}
 
+	//Return jwt information from jwt string token
 	public static JwtResponse from(String jwt) {
-		DecodedJWT decodedJWT = HelperSerivce.getDecodedJwt(jwt);
+		DecodedJWT decodedJWT = JwtService.getDecodedJwt(jwt);
 		JwtResponse jwtResponse = new JwtResponse();
 		jwtResponse.setEmail(decodedJWT.getSubject());
 		jwtResponse.setExpiration(decodedJWT.getExpiresAt());
@@ -48,6 +52,7 @@ public class Dto {
 		return jwtResponse;
 	}
 
+	//Return an IPCResponse=[ipc,ipc residual]
 	public static IPCResponse from(IPC ipc, int residual) {
 		IPCResponse ipcResponse = new IPCResponse();
 		ipcResponse.setAddress(ipc.getAddress());
@@ -58,6 +63,7 @@ public class Dto {
 		return ipcResponse;
 	}
 
+	//Return file information from multipart file
 	public static File from(MultipartFile multipartFile) {
 		File file = new File();
 		file.setName(multipartFile.getOriginalFilename());
@@ -66,6 +72,7 @@ public class Dto {
 		return file;
 	}
 
+	//Return a press from pressRequest
 	public static Press from(PressRequest pressRequest) {
 		return new Press(pressRequest.getName(), pressRequest.getAddress(), pressRequest.getDescription());
 	}

@@ -22,6 +22,14 @@ public class SignInRequest {
 	@Size(min = 8)
 	private String password;
 
+	public SignInRequest() {
+	}
+
+	public SignInRequest(@Email @NotNull @NotBlank String email, @NotBlank @NotNull @Size(min = 8) String password) {
+		this.email = email;
+		this.password = password;
+	}
+
 	public String getEmail() {
 		return email;
 	}

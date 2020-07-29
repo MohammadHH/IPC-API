@@ -6,7 +6,6 @@ import com.exalt.ipc.repositories.IPCRepository;
 import com.exalt.ipc.requests.IPCUpdateRequest;
 import com.exalt.ipc.responses.IPCResponse;
 import com.exalt.ipc.utilities.Dto;
-import com.exalt.ipc.utilities.HelperSerivce;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +23,7 @@ public class IPCService {
 	UserService userService;
 
 	@Autowired
-	HelperSerivce helperSerivce;
+	JwtService jwtService;
 
 	@Autowired
 	private JobService jobService;

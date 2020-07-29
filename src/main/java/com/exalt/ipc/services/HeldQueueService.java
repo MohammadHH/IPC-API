@@ -11,10 +11,7 @@ public class HeldQueueService {
 
 	@Autowired
 	private HeldQueueRepository heldQueueRepository;
-
-	public HeldQueueService() {
-	}
-
+	
 	public HeldQueue save(Press press, long sizeLimit) {
 		return heldQueueRepository.save(new HeldQueue(press, sizeLimit));
 	}

@@ -1,7 +1,7 @@
 package com.exalt.ipc.security;
 
 import com.auth0.jwt.JWT;
-import com.exalt.ipc.localization.LocaleService;
+import com.exalt.ipc.exception.CommonExceptions;
 import com.exalt.ipc.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,15 +38,12 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	private final UserRepository userRepository;
 
 	@Autowired
-	LocaleService localeService;
-
-	@Autowired
 	public JWTAuthenticationFilter(AuthenticationManager authenticationManager, UserRepository userRepository) {
 		this.authenticationManager = authenticationManager;
 		this.userRepository = userRepository;
 	}
 
-	// we parse the user's credentials and issue them to the AuthenticationManager
+	// parse the user's credentials and issue them to the AuthenticationManager
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException {
@@ -59,13 +56,12 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 			String[] s2 = s.split("&");
 			String username = s2[0].split("=")[1];
 			String password = s2[1].split("=")[1];
-			System.out.println("username: " + username + " password: " + password);
 			//            Map<String, String> credentials = new ObjectMapper().readValue(x, Map.class);
 			return authenticationManager
 					.authenticate(new UsernamePasswordAuthenticationToken(username, password, new ArrayList<>()));
 		} catch (IOException e) {
-			//this exception is thrown if readValue method fails
-			throw new RuntimeException(e);
+			//Wrong email and/or password
+			throw CommonExceptions.AUTHENTICATION_FAILED_EXCEPTION;
 		}
 	}
 
@@ -74,12 +70,10 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 			Authentication authResult) throws IOException, ServletException {
 		String username = ((User) authResult.getPrincipal()).getUsername();
-		//		new CustomException(localeService.getMessage(request, 700), HttpStatus.NOT_FOUND)
 		String token =
 				JWT.create().withSubject(username).withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
 					 .withClaim("role", userRepository.findByEmail(username).get().getRole()).sign(HMAC512(SECRET.getBytes()));
-		//	.orElseThrow(() -> null)
-		response.addHeader(HEADER_STRING, TOKEN_PREFIX + token);
+		response.addHeader(AUTHORIZATION, TOKEN_PREFIX + token);
 	}
 }
 

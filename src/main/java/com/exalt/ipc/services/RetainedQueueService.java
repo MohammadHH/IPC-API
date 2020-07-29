@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 public class RetainedQueueService {
 	@Autowired
 	private RetainedQueueRepository retainedQueueRepository;
-
-	public RetainedQueueService() {
-	}
-
+	
 	public RetainedQueue save(Press press) {
 		return retainedQueueRepository.save(new RetainedQueue(press));
 	}

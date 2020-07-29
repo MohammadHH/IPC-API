@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
-import javax.validation.constraints.*;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,16 +48,6 @@ public class IPC {
 	public IPC() {
 		this.creationDate = LocalDateTime.now();
 		this.queueLimit = IPC_QUEUE_LIMIT;
-	}
-
-	public IPC(LocalDateTime creationDate, @Size(min = 5, max = 100) int queueLimit) {
-		this.creationDate = creationDate;
-		this.queueLimit = queueLimit;
-	}
-
-	public IPC(@Size(min = 5, max = 100) int queueLimit) {
-		this.creationDate = LocalDateTime.now();
-		this.queueLimit = queueLimit;
 	}
 
 	public User getUser() {

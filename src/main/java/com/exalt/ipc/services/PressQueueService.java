@@ -1,9 +1,7 @@
 package com.exalt.ipc.services;
 
-import com.exalt.ipc.entities.HeldQueue;
 import com.exalt.ipc.entities.Job;
 import com.exalt.ipc.entities.Press;
-import com.exalt.ipc.entities.PrintingQueue;
 import com.exalt.ipc.repositories.HeldQueueRepository;
 import com.exalt.ipc.repositories.PrintingQueueRepository;
 import com.exalt.ipc.repositories.RetainedQueueRepository;
@@ -14,6 +12,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.exalt.ipc.utilities.States.*;
@@ -21,6 +20,8 @@ import static com.exalt.ipc.utilities.States.*;
 @Service
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class PressQueueService {
+
+	public static final int SLEEP_INTERVAL = 100;
 
 	@Autowired
 	private HeldQueueRepository heldQueueRepository;
@@ -34,6 +35,17 @@ public class PressQueueService {
 	@Autowired
 	private JobService jobService;
 
+	public PressQueueService() {
+	}
+
+	public PressQueueService(HeldQueueRepository heldQueueRepository, PrintingQueueRepository printingQueueRepository,
+			RetainedQueueRepository retainedQueueRepository, JobService jobService) {
+		this.heldQueueRepository = heldQueueRepository;
+		this.printingQueueRepository = printingQueueRepository;
+		this.retainedQueueRepository = retainedQueueRepository;
+		this.jobService = jobService;
+	}
+
 	private Press press;
 
 	private Queue<Job> heldQueue = new LinkedList<>();
@@ -46,40 +58,55 @@ public class PressQueueService {
 
 	private int printingQueueLimit = 0;
 
-	private PrintingThread printingWork = new PrintingThread(1000, () -> {
-		print();
-		return 0;
-	});
+	private AtomicBoolean stopPrinting = new AtomicBoolean(false);
 
-	public Press getPress() {
-		return press;
+	private PrintingThread printingWork = new PrintingThread(SLEEP_INTERVAL, () -> print());
+
+	public void setHeldQueue(Queue<Job> heldQueue) {
+		this.heldQueue = heldQueue;
 	}
 
-	public void setPress(Press press) {
+	public void setPrintingQueue(Queue<Job> printingQueue) {
+		this.printingQueue = printingQueue;
+	}
+
+	public void setRetainedQueue(Queue<Job> retainedQueue) {
+		this.retainedQueue = retainedQueue;
+	}
+
+	public void startPrinting() {
+		if (printingWork.isStopped())
+			printingWork.start();
+	}
+
+	public void setUpPress(Press press) {
 		this.press = press;
+		setHeldQueueLimit(getHeldQueueSizeLimit(press));
+		setPrintingQueueLimit(getPrintingQueueItemsLimit(press));
+		startPrinting();
 	}
 
-	public void setPressAndQueues(Press press) {
-		setPress(press);
-		this.heldQueueLimit = getHeldQueue(press).getSizeLimit();
-		this.printingQueueLimit = getPrintingQueue(press).getItemsLimit();
+	public void setHeldQueueLimit(long heldQueueLimit) {
+		this.heldQueueLimit = heldQueueLimit;
 	}
 
-	public HeldQueue getHeldQueue(Press press) {
-		return heldQueueRepository.findByPressId(press.getId()).get();
+	public void setPrintingQueueLimit(int printingQueueLimit) {
+		this.printingQueueLimit = printingQueueLimit;
 	}
 
-	public PrintingQueue getPrintingQueue(Press press) {
-		return printingQueueRepository.findByPressId(press.getId()).get();
+	public long getHeldQueueSizeLimit(Press press) {
+		return heldQueueRepository.findByPressId(press.getId()).get().getSizeLimit();
+	}
+
+	public int getPrintingQueueItemsLimit(Press press) {
+		return printingQueueRepository.findByPressId(press.getId()).get().getItemsLimit();
 	}
 
 	public List<Job> moveJobsBetweenPressQueues(List<Job> jobs, String oldState, String newState) {
-		if (printingWork.isRunning())
-			printingWork.stop();
+		stopPrinting.set(true);
 		List<Job> movedJobs = jobs.stream().collect(
 				Collectors.mapping(job -> moveJobBetweenPressQueues(job, oldState, newState), Collectors.toList()));
-		if (printingWork.isStopped())
-			printingWork.start();
+		stopPrinting.set(false);
 		return movedJobs;
 	}
 
@@ -104,48 +131,39 @@ public class PressQueueService {
 
 	public Job deleteFromQueue(String queue, Job jobToDelete) {
 		getQueue(queue).removeIf(job -> job.getId() == jobToDelete.getId());
-		System.out.println("PressQueueService.class deleteFrom " + queue + " queue " + jobToDelete.getId());
 		return jobToDelete;
 	}
 
 	public void deleteJobs(List<Job> jobs) {
-		if (printingWork.isRunning())
-			printingWork.stop();
+		stopPrinting.set(true);
 		jobs.forEach(job -> deleteFromQueue(job.getState(), job));
-		if (printingWork.isStopped())
-			printingWork.start();
+		stopPrinting.set(false);
 	}
 
-	public Job deleteQueueFront(String queue) {
-		Queue<Job> q = getQueue(queue);
-		if (q != null)
-			return q.remove();
-		else
-			return null;
-		//FIXME
-	}
-
-	private boolean print() {
-		if (printingQueue.isEmpty()) {
-			System.out.println("Stopping the printing thread because the queue is empty");
-			printingWork.stop();
-			return false;
-		}
+	private int print() {
+		//don't do anything if there is no job to print
+		if (printingQueue.isEmpty())
+			return 0;
 		Long size = printingQueue.element().getFile().getSize() / 1_000_000;
 		try {
+			//simulate printing time for the current job
 			Thread.sleep(size * 1000L);
+			//if press has been stopped don't continue
+			if (stopPrinting.get()) {
+				stopPrinting.set(false);
+				return -1;
+			}
 		} catch (InterruptedException e) {
 		}
 		Job job = printingQueue.remove();
 		job.setState(RETAINED);
 		jobService.saveJob(job);
 		retainedQueue.add(job);
-		return true;
+		return 1;
 	}
 
 	public void restoreJobsToIpc() {
-		if (printingWork.isRunning())
-			printingWork.stop();
+		stopPrinting.set(true);
 		restoreFromQueueToIpc(HELDING);
 		restoreFromQueueToIpc(PRINTING);
 		restoreFromQueueToIpc(RETAINED);
@@ -162,7 +180,6 @@ public class PressQueueService {
 		jobService.saveJob(job);
 	}
 
-	//@formatter:on
 
 	public int heldQueueItemsSize() {
 		return heldQueue.size();
@@ -193,17 +210,22 @@ public class PressQueueService {
 		return printingQueue.size();
 	}
 
+	public int numberOfJobsInHeldQueue() {
+		return heldQueue.size();
+	}
+
 	public List<Job> printAll() {
 		List<Job> added = addToQueue(PRINTING, heldQueue.stream().collect(Collectors.toList()));
 		heldQueue = new LinkedList<>();
 		return added;
 	}
 
-	//@formatter:off
-	public List<Job> addToQueue(String queue,List<Job> jobs){
-		if(printingWork.isRunning())printingWork.stop();
-		List<Job> addedJobs=jobs.stream().collect(Collectors.mapping(job -> addToQueue(queue,job), Collectors.toList()));
-		if(printingWork.isStopped())printingWork.start();
+	public List<Job> addToQueue(String queue, List<Job> jobs) {
+		if (printingWork.isRunning())
+			printingWork.stop();
+		List<Job> addedJobs = jobs.stream().collect(Collectors.mapping(job -> addToQueue(queue, job), Collectors.toList()));
+		if (printingWork.isStopped())
+			printingWork.start();
 		return addedJobs;
 	}
 
@@ -223,12 +245,21 @@ public class PressQueueService {
 		return printingQueue.isEmpty();
 	}
 
+	public boolean isEmptyHeldQueue() {
+		return heldQueue.isEmpty();
+	}
+
+	public boolean printingQueueCanHandle(int jobNumbers) {
+		return (printingQueueLimit - printingQueueItemsSize()) > jobNumbers;
+	}
+
 	public int getPrintingQueueLimit() {
 		return printingQueueLimit;
 	}
-	public void stopPrinting(){
-		if (printingWork.isRunning()){
-		System.out.println("stopPrinting() is called");
+
+	public void stopPrinting() {
+		if (printingWork.isRunning()) {
+			System.out.println("stopPrinting() is called");
 			printingWork.stop();
 		}
 	}

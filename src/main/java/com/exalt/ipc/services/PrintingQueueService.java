@@ -10,10 +10,7 @@ import org.springframework.stereotype.Service;
 public class PrintingQueueService {
 	@Autowired
 	private PrintingQueueRepository printingQueueRepository;
-
-	public PrintingQueueService() {
-	}
-
+	
 	public PrintingQueue save(Press press, int limit) {
 		return printingQueueRepository.save(new PrintingQueue(press, limit));
 	}

@@ -1,7 +1,7 @@
 package com.exalt.ipc.controllers;
 
-import com.exalt.ipc.entities.File;
 import com.exalt.ipc.entities.Job;
+import com.exalt.ipc.exception.CommonExceptions;
 import com.exalt.ipc.services.JobService;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,77 +10,134 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static com.exalt.ipc.utilities.Constants.HEADER_STRING;
-import static com.exalt.ipc.utilities.States.getStates;
+import static com.exalt.ipc.utilities.Constants.*;
 
 
 @RestController
 @RequestMapping("/v1/users/loggedIn")
-@Api(value = "User Management Api", description = "An API to manage job creation,deletion,retrieval and movement")
+@Api(value = JobController.USER_MANAGEMENT_API, description = JobController.MANAGEMENT_API_DESCRIPTION)
 public class JobController {
+
+	public static final String USER_MANAGEMENT_API = "User Management Api";
+
+	public static final String MANAGEMENT_API_DESCRIPTION =
+			"An API to manage job creation,deletion,retrieval and movement";
+
+	public static final String UPLOAD_FILES = "Upload chosen files";
+
+	public static final String UPLOAD_FILES_NOTES = "All the files should be one of these extensions: png,jpeg,pdf";
+
+	public static final String UPLOAD_FILES_NOTE = UPLOAD_FILES_NOTES;
+
+	public static final String SUCCESSFULLY_UPLOADED_FILES = "Successfully uploaded the chosen files";
+
+	public static final String UPLOAD_FILES_FAILED = "Failed to upload the chosen files";
+
+	public static final String SUCCESSFULLY_RETRIEVED_UPLOADED_JOBS = "Successfully retrieved the uploaded jobs";
+
+	public static final String GET_ALL_UPLOADED_JOBS = "Get all ipc uploaded jobs";
+
+	public static final String RETRIEVED_ALL_JOBS_SUCCESSFULLY = "Retrieved all jobs successfully";
+
+	public static final String DELETE_JOBS = "Delete jobs with given IDs";
+
+	public static final String SUCCESSFULLY_DELETED_JOBS = "Successfully deleted the jobs";
+
+	public static final String INVALID_JOB_ID = "One or more job has an invalid Id";
+
+	public static final String JOBS_IDS = "IDs of jobs to delete";
+
+	public static final String GET_ALL_JOBS = "Get all jobs";
+
+	public static final String JOB_STATE = "Job state [uploaded,helding,printing,retained]";
+
+	public static final String RETRIEVED_JOBS_SUCESSFULLY = "Retrieved jobs sucessfully";
+
+	public static final String INVALID_JOB_STATE = "Invalid job state";
+
+	public static final String MOVE_JOBS = "Move jobs in press or between presses and queues";
+
+	public static final String JOBS_MOVED_SUCCESSFULLY = "Jobs moved successfully";
+
+	public static final String INVALID_JOB_SOURCE_OR_DESTINATION = "Invalid job source or destination";
+
+	public static final String RETRIEVE_USER_JOBS = "Retrieve user's job in a given state";
+
 	@Autowired
 	private JobService jobService;
 
-	@ApiOperation(value = "Upload chosen files", notes = "All the files should be one of these extensions: png,jpeg,pdf",
-								response = File.class)
-	@ApiResponses(value = {@ApiResponse(code = 200, message = "Successfully uploaded the chosen files"),
-			@ApiResponse(code = 400, message = "Failed to upload the chosen files")})
-	@PostMapping(value = "/ipc/upload", produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<Job> uploadJobs(
-			@ApiParam(value = "Authorization Bearer utilities", required = true) @RequestHeader(HEADER_STRING) String jwt,
-			@RequestParam("file") MultipartFile[] files) {
-		if (files == null || files.length == 0) {
-			//			new CustomException("7017", HttpStatus.BAD_REQUEST);
-		}
+	@ApiOperation(value = UPLOAD_FILES, notes = UPLOAD_FILES_NOTE, response = Job.class)
+	@ApiResponses(value = {@ApiResponse(code = OK, message = SUCCESSFULLY_UPLOADED_FILES),
+			@ApiResponse(code = BAD_REQUEST, message = UPLOAD_FILES_FAILED),
+			@ApiResponse(code = UNSUPPORTED_MEDIA_TYPE, message = UPLOAD_FILES_FAILED)})
+	@PostMapping(value = "/ipc/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+							 produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+	@ResponseStatus(HttpStatus.OK)
+	public List<Job> uploadJobs(@ApiParam(value = JWT_TOKEN, required = true) @RequestHeader(AUTHORIZATION) String jwt,
+			@ApiParam(required = true) @RequestParam("file") MultipartFile[] files) {
+		
 		return jobService.uploadJobs(jwt, files);
 	}
 
-	@ApiOperation(value = "Get all ipc uploaded files", response = File.class)
-	@ApiResponses(value = {@ApiResponse(code = 200, message = "Successfully retrieved the uploaded files"),
-			@ApiResponse(code = 400, message = "Failed to retrieve the uploaded files")})
-
-	@GetMapping(value = "/ipc/uploaded", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value = GET_ALL_UPLOADED_JOBS, response = Job.class)
+	@ApiResponses(value = {@ApiResponse(code = OK, message = SUCCESSFULLY_RETRIEVED_UPLOADED_JOBS)})
+	@GetMapping(value = "/ipc/uploaded", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+	@ResponseStatus(HttpStatus.OK)
 	public List<Job> getUploadedJobs(
-			@ApiParam(value = "Authorization Bearer utilities", required = true) @RequestHeader(HEADER_STRING) String jwt,
-			HttpServletRequest request) {
+			@ApiParam(value = JWT_TOKEN, required = true) @RequestHeader(AUTHORIZATION) String jwt) {
 		return jobService.getUploaded(jwt);
 	}
 
-	@GetMapping(value = "/jobs", produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<Job> getAllJobs(
-			@ApiParam(value = "Authorization Bearer utilities", required = true) @RequestHeader(HEADER_STRING) String jwt,
-			HttpServletRequest request) {
+	@ApiOperation(value = GET_ALL_JOBS, response = Job.class)
+	@ApiResponses(value = {@ApiResponse(code = OK, message = RETRIEVED_ALL_JOBS_SUCCESSFULLY)})
+	@GetMapping(value = "/jobs", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+	@ResponseStatus(HttpStatus.OK)
+	public List<Job> getAllJobs(@ApiParam(value = JWT_TOKEN, required = true) @RequestHeader(AUTHORIZATION) String jwt) {
 		return jobService.getAllJobs(jwt);
 	}
 
-	@DeleteMapping(value = "/jobs", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value = DELETE_JOBS)
+	@ApiResponses(value = {@ApiResponse(code = OK, message = SUCCESSFULLY_DELETED_JOBS),
+			@ApiResponse(code = NOT_FOUND, message = INVALID_JOB_ID)})
+	@DeleteMapping(value = "/jobs", consumes = {MediaType.APPLICATION_JSON_VALUE},
+								 produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 	@ResponseStatus(HttpStatus.OK)
-	public void deleteJobs(
-			@ApiParam(value = "Authorization Bearer utilities", required = true) @RequestHeader(HEADER_STRING) String jwt,
-			@RequestBody Map<String, Integer[]> IDs) {
+	public void deleteJobs(@ApiParam(value = JWT_TOKEN, required = true) @RequestHeader(AUTHORIZATION) String jwt,
+			@ApiParam(value = JOBS_IDS, required = true) @RequestBody Map<String, Integer[]> IDs) {
+		assertIDsNotNull(IDs);
 		jobService.deleteJobsByIDs(Arrays.asList(IDs.get("IDs")), jwt);
 	}
 
-	@GetMapping(value = "/jobs/{state}", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ApiOperation(value = RETRIEVE_USER_JOBS, response = Job.class)
+	@ApiResponses(value = {@ApiResponse(code = OK, message = RETRIEVED_JOBS_SUCESSFULLY),
+			@ApiResponse(code = BAD_REQUEST, message = INVALID_JOB_STATE)})
+	@GetMapping(value = "/jobs/{state}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+	@ResponseStatus(HttpStatus.OK)
 	public List<Job> getJobsByState(
-			@ApiParam(value = "Authorization Bearer utilities", required = true) @RequestHeader(HEADER_STRING) String jwt,
-			@PathVariable String state) {
-		if (!Arrays.stream(getStates()).anyMatch((s) -> s.equals(state))) {
-			//			throw new CustomException("7090", HttpStatus.BAD_REQUEST, 7091);
-		}
+			@ApiParam(value = JWT_TOKEN, required = true) @RequestHeader(AUTHORIZATION) String jwt,
+			@ApiParam(name = JOB_STATE, required = true) @PathVariable String state) {
 		return jobService.getJobs(state, jwt);
 	}
 
-	@PostMapping(value = "/ipc/jobs/move/{pressId}")
-	public List<Job> moveJobs(@RequestHeader(HEADER_STRING) String jwt, @RequestBody Map<String, Integer[]> IDs,
+	@ApiOperation(value = MOVE_JOBS, response = Job.class)
+	@ApiResponses(value = {@ApiResponse(code = OK, message = JOBS_MOVED_SUCCESSFULLY),
+			@ApiResponse(code = BAD_REQUEST, message = INVALID_JOB_SOURCE_OR_DESTINATION)})
+	@PostMapping(value = "/ipc/jobs/move/{pressId}", consumes = {MediaType.APPLICATION_JSON_VALUE},
+							 produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+	@ResponseStatus(HttpStatus.OK)
+	public List<Job> moveJobs(@RequestHeader(AUTHORIZATION) String jwt, @RequestBody Map<String, Integer[]> IDs,
 			@PathVariable int pressId, @RequestParam String src, @RequestParam String dst) {
-		System.out.println("inside moveJobs() " + Arrays.stream(IDs.get("IDs")));
-		return jobService.moveJobs(pressId, Arrays.asList(IDs.get("IDs")), src, dst);
+		assertIDsNotNull(IDs);
+		return jobService.moveJobs(pressId, Arrays.asList(IDs.get("IDs")), src, dst, jwt);
+	}
+
+	public void assertIDsNotNull(Map<String, Integer[]> IDs) {
+		if (IDs.get("IDs") == null)
+			throw CommonExceptions.NULL_JOB_IDS_EXCEPTION;
 	}
 
 }

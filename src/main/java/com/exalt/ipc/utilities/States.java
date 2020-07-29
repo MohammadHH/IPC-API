@@ -22,7 +22,7 @@ public class States {
 		return new String[]{UPLOADED, HELDING, PRINTING, RETAINED};
 	}
 
-	//return state based on the container
+	//return state based on the container [ipc,printQueue,heldQueue,retainedQueue]
 	public static String get(String container) {
 		switch (container) {
 			case IPC:
@@ -34,7 +34,7 @@ public class States {
 			case RETAINED_QUEUE:
 				return RETAINED;
 		}
-		return UPLOADED;
+		return null;
 	}
 
 }

@@ -32,22 +32,14 @@ public class Press {
 	@Size(max = 250)
 	private String description;
 
-	//	@JsonIgnore
-	//	@OneToMany(fetch = FetchType.LAZY,
-	//						 cascade = {CascadeType.PERSIST, CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
-	//	@JoinColumn(name = "ipc_id")
-	//	private IPC ipc;
-
 	protected Press() {
 	}
-
 
 	public Press(@NotNull @NotBlank String name, @NotNull @NotBlank String address, @Size(max = 250) String description) {
 		this.name = name;
 		this.address = address;
 		this.description = description;
 		setCreationDate(LocalDateTime.now());
-		//		this.setIpc(null);
 	}
 
 

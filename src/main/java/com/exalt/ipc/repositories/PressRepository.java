@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PressRepository extends CrudRepository<Press, Integer> {
-	//		public Optional<Press> findByIpcId(int id);
 }

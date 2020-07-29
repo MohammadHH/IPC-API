@@ -31,11 +31,6 @@ public class Job {
 	public Job() {
 	}
 
-	public Job(LocalDateTime creationDate, String state) {
-		this.creationDate = creationDate;
-		this.state = state;
-	}
-
 	public Job(String state, File file, User user) {
 		this.creationDate = LocalDateTime.now();
 		this.state = state;
@@ -86,6 +81,6 @@ public class Job {
 	@Override
 	public String toString() {
 		return "Job{id=" + id + ", creationDate=" + creationDate + ", state='" + state + '\'' + ", returnedDate=" +
-				returnedDate + ", user=" + user + '}';
+				returnedDate + '}';
 	}
 }
